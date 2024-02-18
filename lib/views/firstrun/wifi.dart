@@ -22,19 +22,24 @@ class SSIDField extends ConsumerWidget {
   }
 }
 
-class PasswordField extends ConsumerWidget {
+class PasswordField extends ConsumerStatefulWidget {
   const PasswordField({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    bool _isObscured = true;
+  _PasswordFieldState createState() => _PasswordFieldState();
+}
 
-    void _togglePasswordVisibility() {
+class _PasswordFieldState extends ConsumerState<PasswordField> {
+  bool _isObscured = true;
+
+  void _togglePasswordVisibility() {
+    setState(() {
       _isObscured = !_isObscured;
-      // Force widget to rebuild and update its state
-      (context as Element).markNeedsBuild();
-    }
+    });
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return TextField(
       obscureText: _isObscured,
       decoration: InputDecoration(

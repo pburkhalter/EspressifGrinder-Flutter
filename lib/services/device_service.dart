@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:espressif_grinder_flutter/services/api_service.dart';
 import 'package:espressif_grinder_flutter/services/config_service.dart';
 import 'package:espressif_grinder_flutter/services/mdns_service.dart';
@@ -9,12 +10,6 @@ import 'package:http/http.dart';
 
 import '../models/device.dart';
 
-
-String extractDeviceName(String input) {
-  if (input.isEmpty) return input;
-  final String name = input.split('.')[0];
-  return name[0].toUpperCase() + name.substring(1);
-}
 
 class DeviceService {
   final MdnsServiceDiscovery _mdnsClient = MdnsServiceDiscovery();
@@ -39,16 +34,26 @@ class DeviceService {
       final String baseUrl = "http://$address:$port";
       final String endpoint = "$baseUrl/api/init/status";
 
+      availableDevices.add(Device(deviceName: device.deviceName, deviceAddress: address, devicePort: port));
+
       try {
         final Response deviceInfo = await _apiService.get(endpoint);
-
-        if (deviceInfo.statusCode == 200) {
-          availableDevices.add(Device(deviceName: device.deviceName, deviceAddress: address, devicePort: port));
-        }
       } finally {}
     }
 
     return availableDevices;
+  }
+
+  Future<String?> getDeviceId() async {
+    var deviceInfo = DeviceInfoPlugin();
+    if (Platform.isIOS) { // import 'dart:io'
+      var iosDeviceInfo = await deviceInfo.iosInfo;
+      return iosDeviceInfo.identifierForVendor; // unique ID on iOS
+    } else if(Platform.isAndroid) {
+      var androidDeviceInfo = await deviceInfo.androidInfo;
+      return androidDeviceInfo.id; // unique ID on Android
+    }
+    return null;
   }
 
   Future<bool> checkDeviceInitialisationState(Device device) async {
@@ -58,12 +63,10 @@ class DeviceService {
     final String endpoint = "$baseUrl/api/init/status";
 
     try {
-      final Response response = await _apiService.get(endpoint);
+      // OK
+      final String response = await _apiService.get(endpoint);
+      return true;
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if(data['authKey']){return true;}
-      }
     } catch (e) {
       Fluttertoast.showToast(
           msg: "Error checking device initialisation status: $e",
@@ -78,23 +81,15 @@ class DeviceService {
     return false;
   }
 
-  Future<bool> pushCertificateToDevice(Device device, certificate, String type) async {
+  Future<bool> pushCertificateToDevice(Device device, certificateName, String type) async {
     final String address = device.deviceAddress;
     final int port = device.devicePort;
     final String baseUrl = "http://$address:$port";
     final String endpoint = "$baseUrl/api/init/$type";
 
     try {
-      final responseOk = await _apiService.uploadFile(endpoint, certificate).timeout(const Duration(seconds: 5));
-
-      if (responseOk) {
-        // switching to TLS mode
-        await init(useTLS: true);
-
-        return true;
-      } else {
-        return false;
-      }
+      final response = await _apiService.uploadFile(endpoint, certificateName).timeout(const Duration(seconds: 5));
+      return true;
     } catch (e) {
       return false;
     }
@@ -112,11 +107,10 @@ class DeviceService {
     };
 
     try {
-      final response = await _apiService.post(endpoint, credentials);
+      // OK
+      final String response = await _apiService.post(endpoint, credentials);
+      return true;
 
-      if (response.statusCode == 200) {
-        return true;
-      }
     } catch (e) {
       Fluttertoast.showToast(
           msg: "Error pushing WiFi credentials: $e",
@@ -132,22 +126,20 @@ class DeviceService {
   }
 
 
-  Future<bool> waitForDeviceToBecomeReady(Device device, {int timeoutSeconds = 30}) async {
+  Future<bool> waitForDeviceToBecomeReady(Device device, {int timeoutSeconds = 60}) async {
     final Duration timeoutDuration = Duration(seconds: timeoutSeconds);
     final DateTime endTime = DateTime.now().add(timeoutDuration);
 
     final String address = device.deviceAddress;
     final int port = device.devicePort;
     final String baseUrl = "http://$address:$port";
-    final String endpoint = "$baseUrl/api/status";
+    final String endpoint = "$baseUrl/api/init/status";
 
     while (DateTime.now().isBefore(endTime)) {
       try {
-        final response = await _apiService.get(endpoint).timeout(const Duration(seconds: 5)); // Set a reasonable timeout for the GET request itself
-
-        if (response.statusCode == 200) {
-          return true;
-        }
+        // OK
+        final String response = await _apiService.get(endpoint).timeout(const Duration(seconds: 5));
+        return true;
       } catch (e) {
         // retry...
       }
@@ -165,19 +157,15 @@ class DeviceService {
     final String endpoint = "$baseUrl/api/init/register";
 
     try {
-      final Response registerInfo = await _apiService.get(endpoint);
+      // TODO save token!
+      String? id = await getDeviceId();
 
-      if (registerInfo.statusCode == 200) {
-        final String data = registerInfo.body;
-        _configService.set('token', data);
-      } else {
-        print("Failed to register with device");
-      }
+      final String token = await _apiService.post(endpoint, id);
+      return true;
     } catch (e) {
       print("Error registering with device: $e");
     }
-
-    return Future.value(true);
+    return false;
   }
 
   Future<bool> getDeviceDetails(Device device, String authKey) async {
@@ -187,23 +175,18 @@ class DeviceService {
     final String endpoint = "$baseUrl/api/device/details";
 
     try {
-      final Response deviceDetails = await _apiService.get(endpoint);
+      // JSON
+      final Map<String, dynamic> deviceDetails = await _apiService.get(endpoint);
 
-      if (deviceDetails.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(deviceDetails.body);
+      device.deviceProductManufacturer = deviceDetails['deviceProductManufacturer'];
+      device.deviceProductName = deviceDetails['deviceProductName'];
+      device.deviceProductSerial = deviceDetails['deviceProductSerial'];
 
-        device.deviceProductManufacturer = data['deviceProductManufacturer'];
-        device.deviceProductName = data['deviceProductName'];
-        device.deviceProductSerial = data['deviceProductSerial'];
-
-      } else {
-        print("Failed to get details from device");
-      }
+      return true;
     } catch (e) {
       print("Error getting details from device: $e");
     }
-
-    return Future.value(true);
+    return false;
   }
 
   Future<bool> finishInitAndResetDevice(Device device) async {
@@ -213,24 +196,11 @@ class DeviceService {
     final String endpoint = "$baseUrl/api/init/finish";
 
     try {
-      final Response response = await _apiService.get(endpoint);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if(data['authKey']){return true;}
-      }
+      final String response = await _apiService.get(endpoint);
+      return true;
     } catch (e) {
-      Fluttertoast.showToast(
-          msg: "Error finish and reset device: $e",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          timeInSecForIosWeb: 5,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0
-      );
+      print("Error finishing setup: $e");
     }
     return false;
   }
-
 }

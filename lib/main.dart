@@ -2,7 +2,7 @@ import 'package:espressif_grinder_flutter/services/config_service.dart';
 import 'package:flutter/material.dart';
 import '/views/firstrun/firstrun.dart';
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome, rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
@@ -18,11 +18,13 @@ Future<void> main() async {
   var configService = ConfigService();
   await configService.copyConfigFile();
 
-  runApp(
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]).then((value) => runApp(
     const ProviderScope(
       child: MyApp(),
     ),
-  );
+  ));
 }
 
 class MyApp extends StatelessWidget {

@@ -1,4 +1,5 @@
-import 'package:multicast_dns/multicast_dns.dart';
+import 'dart:async';
+import 'package:flutter_nsd/flutter_nsd.dart';
 import '../models/device.dart';
 
 String extractDeviceName(String input) {
@@ -8,25 +9,47 @@ String extractDeviceName(String input) {
 }
 
 class MdnsServiceDiscovery {
-  final MDnsClient _client = MDnsClient();
+  final flutterNsd = FlutterNsd();
 
   Future<List<Device>> startDiscovery(String serviceType) async {
     List<Device> devices = [];
+    var completer = Completer<List<Device>>();
 
-    await _client.start();
-    await for (PtrResourceRecord ptr in _client.lookup<PtrResourceRecord>(
-        ResourceRecordQuery.serverPointer(serviceType))) {
+    final subscription = flutterNsd.stream.listen((nsdServiceInfo) {
+      print('Discovered service name: ${nsdServiceInfo.name}');
+      print('Discovered service hostname/IP: ${nsdServiceInfo.hostname}');
+      print('Discovered service port: ${nsdServiceInfo.port}');
 
-      final String fullName = ptr.domainName;
-      final String name = extractDeviceName(fullName);
+      final String deviceName = nsdServiceInfo.name ?? 'Unknown';
+      final String deviceAddress = nsdServiceInfo.hostAddresses?.first ?? 'Unknown';
+      final int devicePort = nsdServiceInfo.port ?? 0;
 
-      await for (SrvResourceRecord srv in _client.lookup<SrvResourceRecord>(
-          ResourceRecordQuery.service(fullName))) {
-        final device = Device(deviceName: name, deviceAddress: srv.target, devicePort: srv.port);
-        devices.add(device);
+      final device = Device(
+        deviceName: deviceName,
+        deviceAddress: deviceAddress,
+        devicePort: devicePort,
+      );
+      devices.add(device);
+
+    }, onError: (e) {
+      if (e is NsdError) {
+        print("Error discovering services: ${e.errorCode}");
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
       }
-    }
-    _client.stop();
-    return devices;
+    });
+
+    await flutterNsd.discoverServices(serviceType);
+
+    Future.delayed(Duration(seconds: 10), () {
+      flutterNsd.stopDiscovery();
+      subscription.cancel();
+      if (!completer.isCompleted) {
+        completer.complete(devices);
+      }
+    });
+
+    return completer.future;
   }
 }

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'connect.dart';
 import 'instructions.dart';
 import 'welcome.dart';
-import 'device.dart';
+import '../main/device.dart';
 import 'setup.dart';
 import 'success.dart';
 
@@ -18,7 +18,7 @@ class FirstrunProcess extends StatefulWidget {
 
 class _FirstrunProcessState extends State<FirstrunProcess> {
   final PageController _pageController = PageController();
-  static const int _numPages = 7;
+  static const int _numPages = 6;
   int _currentPage = 0;
 
   void _onPageChanged(int page) {
@@ -73,7 +73,6 @@ class _FirstrunProcessState extends State<FirstrunProcess> {
                   FirstrunInstructionsPage(onNextPressed: _nextPage),
                   FirstrunConnectPage(onNextPressed: _nextPage),
                   FirstrunWifiPage(onNextPressed: _nextPage),
-                  FirstrunDevicePage(onNextPressed: _nextPage),
                   FirstrunSetupPage(onNextPressed: _nextPage),
                   FirstrunSuccessPage(onFinishPressed: _finishFirstrun),
                 ],

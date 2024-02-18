@@ -45,28 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSLocalNetworkUsageDescription</key>
-    <string>Looking for local tcp Bonjour service</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Discover local Network Devices (Grinder)</string>
     <key>NSBonjourServices</key>
     <array>
-    	<string>_some-service._tcp</string>
+       <string>_http._tcp.</string>
     </array>
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_http._tcp</string>
-    </array>
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_http._tcp</string>
-    </array>
-    <key>com.apple.developer.networking.multicast</key>
-    <true/>
-   <key>NSLocalNetworkUsageDescription</key>
-    <string>Network usage is required for macOS/iOS communication</string>
-      <key>NSBonjourServices</key>
-      <array>
-        <string>_http._tcp</string>
-        <string>_http._tcp.local</string>
-      </array>
 </dict>
 </plist>

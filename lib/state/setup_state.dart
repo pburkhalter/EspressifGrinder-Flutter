@@ -14,17 +14,22 @@ class DeviceSetupState {
   final String statusMessage;
   final String wifiAccessPoint;
   final String wifiPassword;
+  final bool setupFinished;
+  final String authToken;
 
 
   DeviceSetupState({
     this.selectedDevice,
     this.errorMessage = '',
     this.isLoading = false,
+    this.setupFinished = false,
     this.processStep = 0,
-    this.statusMessage = 'Waiting...',
+    this.statusMessage = 'Initializing...',
 
     this.wifiAccessPoint = '',
     this.wifiPassword = '',
+
+    this.authToken = ''
   });
 
   DeviceSetupState copyWith({
@@ -33,18 +38,23 @@ class DeviceSetupState {
     bool? isLoading,
     int? processStep,
     String? statusMessage,
+    bool? setupFinished,
     String? wifiAccessPoint,
-    String? wifiPassword
+    String? wifiPassword,
+    String? authToken
   }) {
     return DeviceSetupState(
-      selectedDevice: selectedDevice ?? this.selectedDevice,
-      errorMessage: errorMessage ?? this.errorMessage,
-      isLoading: isLoading ?? this.isLoading,
-      processStep: processStep ?? this.processStep,
-      statusMessage: statusMessage ?? this.statusMessage,
+        selectedDevice: selectedDevice ?? this.selectedDevice,
+        errorMessage: errorMessage ?? this.errorMessage,
+        isLoading: isLoading ?? this.isLoading,
+        processStep: processStep ?? this.processStep,
+        statusMessage: statusMessage ?? this.statusMessage,
+        setupFinished: setupFinished ?? this.setupFinished,
 
-      wifiAccessPoint: wifiAccessPoint ?? this.wifiAccessPoint,
-      wifiPassword: wifiPassword ?? this.wifiPassword
+        wifiAccessPoint: wifiAccessPoint ?? this.wifiAccessPoint,
+        wifiPassword: wifiPassword ?? this.wifiPassword,
+
+        authToken: authToken ?? this.authToken
     );
   }
 }
@@ -65,32 +75,83 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
   CertificateService certificateService = CertificateService();
 
 
-  Future<void> setupDevice(Device device) async {
-    if (state.processStep == 0 && state.errorMessage!.isEmpty) {
-      await checkDeviceInitialisationState(device);
+  Future<void> setupDevice() async {
+
+    await deviceService.init();
+
+    Device device = Device(
+        deviceName: 'CoffeeGrinder',
+        deviceAddress: '192.168.4.1',
+        devicePort: 80
+    );
+
+    state = state.copyWith(selectedDevice: device);
+
+    if (state.processStep == 0 && (state.errorMessage?.isEmpty ?? true)) {
+      state = state.copyWith(
+          processStep: 1,
+          statusMessage: "Waiting for device to become ready..."
+      );
+      var success = await waitForDeviceToBecomeReady(device);
+      if (!success) { state = state.copyWith(errorMessage: "Device did not become ready in a reasonable time"); }
     }
-    if(state.processStep == 1 && state.errorMessage!.isEmpty){
-      await generateCertificates(device);
+    if(state.processStep == 1 && (state.errorMessage?.isEmpty ?? true)){
+      state = state.copyWith(
+          processStep: 2,
+          statusMessage: "Generating certificates..."
+      );
+      var success = await generateCertificates(device);
+      if (!success) { state = state.copyWith(errorMessage: "Could not generate certificates"); }
     }
-    if(state.processStep == 2 && state.errorMessage!.isEmpty){
-      await pushCertificatesToDevice(device);
+    if(state.processStep == 2 && (state.errorMessage?.isEmpty ?? true)){
+      state = state.copyWith(
+          processStep: 3,
+          statusMessage: "Pushing certificates to device..."
+      );
+      var success = await pushCertificatesToDevice(device);
+      if (!success) { state = state.copyWith(errorMessage: "Could not push certificates to device"); }
     }
-    if(state.processStep == 3 && state.errorMessage!.isEmpty){
+    if(state.processStep == 3 && (state.errorMessage?.isEmpty ?? true)){
       var ap = state.wifiAccessPoint;
       var pw = state.wifiPassword;
 
-      await pushWifiConfigToDevice(device, ap, pw);
+      state = state.copyWith(statusMessage: "Pushing WiFi Credentials to device...");
+      state = state.copyWith(
+          processStep: 4,
+          statusMessage: "Pushing wifi credentials to device..."
+      );
+      var success = await pushWifiConfigToDevice(device, ap, pw);
+      if (!success) { state = state.copyWith(errorMessage: "Could not push Wifi credentials to device"); }
     }
-    if(state.processStep == 4 && state.errorMessage!.isEmpty){
-      await waitForDeviceToBecomeReady(device);
+    if(state.processStep == 4 && (state.errorMessage?.isEmpty ?? true)){
+      state = state.copyWith(
+          processStep: 5,
+          statusMessage: "Register with device..."
+      );
+      var success = await registerWithDevice(device);
+      if (!success) { state = state.copyWith(errorMessage: "Could not register with device"); }
     }
-    if(state.processStep == 5 && state.errorMessage!.isEmpty){
-      await registerWithDevice(device);
+    if(state.processStep == 5 && (state.errorMessage?.isEmpty ?? true)){
+      state = state.copyWith(
+          processStep: 6,
+          statusMessage: "Getting device info..."
+      );
+      var success = await getDeviceInfo(device);
+      if (!success) { state = state.copyWith(errorMessage: "Could not get device info"); }
     }
-    if(state.processStep == 6 && state.errorMessage!.isEmpty){
-      await finishInitAndResetDevice(device);
+    if(state.processStep == 6 && (state.errorMessage?.isEmpty ?? true)){
+      state = state.copyWith(
+          processStep: 7,
+          statusMessage: "Finish setup..."
+      );
+      var success = await finishInitAndResetDevice(device);
+      if (success) { state = state.copyWith(
+          isLoading: false,
+          setupFinished: true); }
+      else {
+          state = state.copyWith(errorMessage: "Could not finish setup");
+      }
     }
-
   }
 
 
@@ -105,100 +166,53 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
 
   Future<bool> checkDeviceInitialisationState(Device device) async {
     final isInitialized = await deviceService.checkDeviceInitialisationState(device);
-    if (isInitialized) {
-      state = state.copyWith(
-        processStep: 1,
-        statusMessage: "Device initialized...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Could not initialize device...",);
-    return false;
+    if (isInitialized) {return true;}
+    else {return false;}
   }
 
   Future<bool> generateCertificates(Device device) async {
     final isGenerated = await certificateService.generateAndSaveCertificates();
-    if (isGenerated) {
-      state = state.copyWith(
-        processStep: 2,
-        statusMessage: "Certificates generated...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Could not generate certificates...",);
-    return false;
+    if (isGenerated) {return true;}
+    else {return false;}
   }
 
   Future<bool> pushCertificatesToDevice(Device device) async {
-    final List<int> certDer = await certificateService.loadCertDer();
-    final List<int> keyDer = await certificateService.loadKeyDer();
+    final isCertPushed = await deviceService.pushCertificateToDevice(device, 'cert.der', 'cert');
+    final isKeyPushed = await deviceService.pushCertificateToDevice(device, 'key.der', 'key');
 
-    final isCertPushed = await deviceService.pushCertificateToDevice(device, certDer, 'cert');
-    final isKeyPushed = await deviceService.pushCertificateToDevice(device, keyDer, 'key');
-
-    if (isCertPushed && isKeyPushed) {
-      state = state.copyWith(
-        processStep: 3,
-        statusMessage: "Certificates Pushed...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Could not push certificates to device...",);
-    return false;
+    if (isCertPushed && isKeyPushed) {return true;}
+    else {return false;}
   }
 
   Future<bool> pushWifiConfigToDevice(Device device, String accesspoint, String password) async {
     final isPushed = await deviceService.pushWifiConfigToDevice(device, accesspoint, password);
-    if (isPushed) {
-      state = state.copyWith(
-        processStep: 4,
-        statusMessage: "Wifi-Config Pushed...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Could not push wifi credentials to device...",);
-    return false;
+    if (isPushed) {return true;}
+    else {return false;}
   }
 
   Future<bool> waitForDeviceToBecomeReady(Device device) async {
     final isReady = await deviceService.waitForDeviceToBecomeReady(device);
-    if (isReady) {
-      state = state.copyWith(
-        processStep: 5,
-        statusMessage: "Device rebooted...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Device did not become ready within a reasonable time...",);
-    return false;
+    if (isReady) {return true;}
+    else {return false;}
   }
 
   Future<bool> registerWithDevice(Device device) async {
     final isRegistered = await deviceService.registerWithDevice(device);
-    if (isRegistered) {
-      state = state.copyWith(
-        processStep: 6,
-        statusMessage: "Client registered...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Could not register with device...",);
-    return false;
+    if (isRegistered) {return true;}
+    else {return false;}
+  }
+
+  Future<bool> getDeviceInfo(Device device) async {
+    final details = await deviceService.registerWithDevice(device);
+    if (details) {return true;}
+    else {return false;}
   }
 
   Future<bool> finishInitAndResetDevice(Device device) async {
     final isFinished = await deviceService.finishInitAndResetDevice(device);
-    if (isFinished) {
-      state = state.copyWith(
-        processStep: 7,
-        statusMessage: "Finishing setup...",
-      );
-      return true;
-    }
-    state = state.copyWith(errorMessage: "Could not finish setup...",);
-    return false;
+    if (isFinished) {return true;}
+    else {return false;}
   }
-
 }
 
 

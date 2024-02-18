@@ -6,7 +6,7 @@ import '../../state/setup_state.dart';
 import '../../widgets/description.dart';
 import '../../widgets/title.dart';
 
-class FirstrunSetupPage extends ConsumerWidget {
+class FirstrunSetupPage extends ConsumerStatefulWidget {
   final VoidCallback onNextPressed;
 
   const FirstrunSetupPage({
@@ -15,13 +15,27 @@ class FirstrunSetupPage extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final deviceSetupState = ref.watch(deviceSetupProvider);
+  FirstrunSetupPageState createState() => FirstrunSetupPageState();
+}
 
-    // Ensure the device setup is initiated only once when the widget is first built
-    if (deviceSetupState.selectedDevice != null && deviceSetupState.processStep == 0) {
-      ref.read(deviceSetupProvider.notifier).setupDevice(deviceSetupState.selectedDevice!);
+class FirstrunSetupPageState extends ConsumerState<FirstrunSetupPage> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => startSetupProcess());
+  }
+
+  void startSetupProcess() {
+    final deviceSetupState = ref.read(deviceSetupProvider);
+    if (deviceSetupState.processStep == 0) {
+      final deviceSetupState = ref.read(deviceSetupProvider);
+      ref.read(deviceSetupProvider.notifier).setupDevice();
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final deviceSetupState = ref.watch(deviceSetupProvider);
 
     final Widget illustration = SvgPicture.asset(
       'assets/images/settings.svg',
@@ -47,15 +61,12 @@ class FirstrunSetupPage extends ConsumerWidget {
                     const TitleText(text: "Almost there", padding: 10),
                     const DescriptionText(text: "Just a moment. We're setting up the device...", padding: 10),
                     const SizedBox(height: 50),
-
-                    CircularProgressIndicator(
-                      value: deviceSetupState.processStep / 6, // Update to use processStep from state
-                      color: Colors.black,
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    Text("${deviceSetupState.processStep}/7 ${deviceSetupState.statusMessage}"),
+                    const CircularProgressIndicator(color: Colors.black,),
+                    const SizedBox(height: 50),
+                    Text("${deviceSetupState.processStep}/7 "),
+                    const SizedBox(height: 10),
+                    Text(deviceSetupState.statusMessage,
+                    textAlign: TextAlign.center),
                   ],
                 ),
               ),

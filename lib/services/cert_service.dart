@@ -81,16 +81,19 @@ class CertificateService {
   }
 
   Future<List<int>> convertPemToDer(String pemContent) async {
-    // Remove PEM header and footer
-    String base64Content = pemContent.replaceAll('-----BEGIN CERTIFICATE-----', '')
+    // Identify and remove the appropriate PEM header and footer for certificates and keys
+    pemContent = pemContent
+        .replaceAll('-----BEGIN CERTIFICATE-----', '')
         .replaceAll('-----END CERTIFICATE-----', '')
+        .replaceAll('-----BEGIN EC PRIVATE KEY-----', '')
+        .replaceAll('-----END EC PRIVATE KEY-----', '')
+        .replaceAll('-----BEGIN PUBLIC KEY-----', '')
+        .replaceAll('-----END PUBLIC KEY-----', '')
         .replaceAll('\r\n', '')
         .replaceAll('\n', '');
 
     // Base64 decode to get DER bytes
-    List<int> derBytes = base64.decode(base64Content);
-
-    return derBytes;
+    return base64.decode(pemContent);
   }
 
   Future<String> loadCertPem() async {

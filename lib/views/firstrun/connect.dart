@@ -52,7 +52,7 @@ class FirstrunConnectPage extends StatelessWidget {
                                   padding: 15,
                                 ),
                                 const Text(
-                                    'SSID: CoffeGrinder',
+                                    'SSID: CoffeeGrinder',
                                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
                                 ),
                                 const Text(
@@ -74,7 +74,7 @@ class FirstrunConnectPage extends StatelessWidget {
                   Expanded(
                       flex: 2,
                       child: CustomElevatedButton(
-                          buttonText: 'Skip',
+                          buttonText: 'Next',
                           onPressed: onNextPressed
                       )
                   )
