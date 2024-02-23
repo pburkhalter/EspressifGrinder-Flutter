@@ -31,7 +31,7 @@ class DeviceListView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: ListTile(
-                  title: Text(device.deviceName),
+                  title: Text("Test Device"),  // TODO
                   subtitle: Text('Address: ${device.deviceAddress}, Port: ${device.devicePort}'),
                 ),
               ),

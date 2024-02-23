@@ -11,10 +11,16 @@ class FirstrunInstructionsPage extends StatelessWidget {
   final String descriptionNote = "The LED will flash repeatedly while the connection mode is active.";
 
   final VoidCallback onNextPressed;
+  final Function(String) onButtonTextChange;
+  final Function(bool) onButtonVisibilityChange;
+
+
 
   const FirstrunInstructionsPage({
     Key? key,
     required this.onNextPressed,
+    required this.onButtonTextChange,
+    required this.onButtonVisibilityChange
   }) : super(key: key);
 
   @override
@@ -25,27 +31,29 @@ class FirstrunInstructionsPage extends StatelessWidget {
       height: 120,
     );
 
+    onButtonTextChange("Next");
+    onButtonVisibilityChange(true);
+
     return Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
-                      flex: 2,
-                      child: Center(child: illustration)
-                  ),
+                const SizedBox(height: 25),
+            Center(child: illustration),
+            const SizedBox(height: 25),
                   Expanded(
                       flex: 4,
                       child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20), // Apply padding here
-                          constraints: const BoxConstraints(maxWidth: 300), // Apply constraints here
+                          constraints: const BoxConstraints(maxWidth: 350), // Apply constraints here
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 TitleText(
                                     text: title,
-                                    padding: 10),
+                                    padding: 20),
                                 DescriptionText(
                                     text: descriptionConnect,
                                     padding: 20,
@@ -60,13 +68,6 @@ class FirstrunInstructionsPage extends StatelessWidget {
                                 )
                               ]
                           )
-                      )
-                  ),
-                  Expanded(
-                      flex: 1,
-                      child: CustomElevatedButton(
-                          buttonText: 'Start',
-                          onPressed: onNextPressed
                       )
                   )
                 ]

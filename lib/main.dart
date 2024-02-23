@@ -1,22 +1,22 @@
 import 'package:espressif_grinder_flutter/services/config_service.dart';
-import 'package:flutter/material.dart';
-import '/views/firstrun/firstrun.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome, rootBundle;
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+
+import '/views/firstrun/firstrun.dart';
 
 
 Future<bool> isFirstRun() async {
-  final jsonString = await rootBundle.loadString('assets/config/config.json');
-  final Map<String, dynamic> config = json.decode(jsonString);
-  return !(config['firstrun_done'] ?? true);
+  var configService = ConfigService();
+  await configService.copyConfigFile();
+
+  return !(await configService.get('firstrun_done'));
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   var configService = ConfigService();
-  await configService.copyConfigFile();
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

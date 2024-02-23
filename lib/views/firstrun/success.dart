@@ -7,10 +7,16 @@ class FirstrunSuccessPage extends StatelessWidget {
   final String title = "Success";
   final String description = "You're all set!";
   final VoidCallback onFinishPressed;
+  final Function(String) onButtonTextChange;
+  final Function(bool) onButtonVisibilityChange;
+
+
 
   const FirstrunSuccessPage({
     Key? key,
     required this.onFinishPressed,
+    required this.onButtonTextChange,
+    required this.onButtonVisibilityChange
   }) : super(key: key);
 
   @override
@@ -20,6 +26,9 @@ class FirstrunSuccessPage extends StatelessWidget {
       width: 200,
       height: 200,
     );
+
+    onButtonTextChange("Done");
+    onButtonVisibilityChange(true);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -35,7 +44,7 @@ class FirstrunSuccessPage extends StatelessWidget {
               flex: 2,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20), // Apply padding here
-                constraints: const BoxConstraints(maxWidth: 300), // Apply constraints here
+                constraints: const BoxConstraints(maxWidth: 350), // Apply constraints here
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -55,14 +64,7 @@ class FirstrunSuccessPage extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            ),
-            Expanded(
-                flex: 1,
-                child: CustomElevatedButton(
-                    buttonText: 'Start',
-                    onPressed: onFinishPressed
-                )
+              )
             )
           ]
         )

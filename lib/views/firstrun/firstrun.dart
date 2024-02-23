@@ -1,11 +1,9 @@
-import 'package:espressif_grinder_flutter/state/setup_state.dart';
 import 'package:espressif_grinder_flutter/views/firstrun/wifi.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../widgets/button.dart';
 import 'connect.dart';
 import 'instructions.dart';
 import 'welcome.dart';
-import '../main/device.dart';
 import 'setup.dart';
 import 'success.dart';
 
@@ -13,13 +11,15 @@ class FirstrunProcess extends StatefulWidget {
   const FirstrunProcess({Key? key}) : super(key: key);
 
   @override
-  _FirstrunProcessState createState() => _FirstrunProcessState();
+  FirstrunProcessState createState() => FirstrunProcessState();
 }
 
-class _FirstrunProcessState extends State<FirstrunProcess> {
+class FirstrunProcessState extends State<FirstrunProcess> {
   final PageController _pageController = PageController();
   static const int _numPages = 6;
   int _currentPage = 0;
+  String _buttonText = 'Start';
+  bool _showButton = true;
 
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
@@ -35,6 +35,14 @@ class _FirstrunProcessState extends State<FirstrunProcess> {
     if (_currentPage > 0) {
       _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeIn);
     }
+  }
+
+  void _setButtonText(String text) {
+      _buttonText = text;
+  }
+
+  void _changeButtonVisibility(bool visible) {
+    _showButton = visible;
   }
 
   void _finishFirstrun() {
@@ -70,14 +78,40 @@ class _FirstrunProcessState extends State<FirstrunProcess> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   FirstrunWelcomePage(onNextPressed: _nextPage),
-                  FirstrunInstructionsPage(onNextPressed: _nextPage),
-                  FirstrunConnectPage(onNextPressed: _nextPage),
-                  FirstrunWifiPage(onNextPressed: _nextPage),
-                  FirstrunSetupPage(onNextPressed: _nextPage),
-                  FirstrunSuccessPage(onFinishPressed: _finishFirstrun),
+                  FirstrunInstructionsPage(
+                      onNextPressed: _nextPage,
+                      onButtonTextChange: _setButtonText,
+                      onButtonVisibilityChange: _changeButtonVisibility),
+                  FirstrunConnectPage(
+                      onNextPressed: _nextPage,
+                      onButtonTextChange: _setButtonText,
+                      onButtonVisibilityChange: _changeButtonVisibility),
+                  FirstrunWifiPage(
+                      onNextPressed: _nextPage,
+                      onButtonTextChange: _setButtonText,
+                      onButtonVisibilityChange: _changeButtonVisibility),
+                  FirstrunSetupPage(
+                      onNextPressed: _nextPage,
+                      onButtonVisibilityChange: _changeButtonVisibility,
+                  ),
+                  FirstrunSuccessPage(
+                      onFinishPressed: _finishFirstrun,
+                      onButtonTextChange: _setButtonText,
+                      onButtonVisibilityChange: _changeButtonVisibility)
                 ],
               ),
             ),
+            Visibility(
+              visible: _showButton,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: CustomElevatedButton(
+                  buttonText: _buttonText,
+                  onPressed: _nextPage
+              ),
+            ),
+
             _buildPageIndicator(),
           ],
         ),

@@ -8,7 +8,7 @@ String extractDeviceName(String input) {
   return name[0].toUpperCase() + name.substring(1);
 }
 
-class MdnsServiceDiscovery {
+class MdnsDiscoveryService {
   final flutterNsd = FlutterNsd();
 
   Future<List<Device>> startDiscovery(String serviceType) async {
@@ -21,7 +21,8 @@ class MdnsServiceDiscovery {
       print('Discovered service port: ${nsdServiceInfo.port}');
 
       final String deviceName = nsdServiceInfo.name ?? 'Unknown';
-      final String deviceAddress = nsdServiceInfo.hostAddresses?.first ?? 'Unknown';
+      final String deviceAddress =
+          nsdServiceInfo.hostAddresses?.first ?? 'Unknown';
       final int devicePort = nsdServiceInfo.port ?? 0;
 
       final device = Device(
@@ -30,7 +31,6 @@ class MdnsServiceDiscovery {
         devicePort: devicePort,
       );
       devices.add(device);
-
     }, onError: (e) {
       if (e is NsdError) {
         print("Error discovering services: ${e.errorCode}");

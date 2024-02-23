@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../widgets/button.dart';
 import '../../widgets/description.dart';
 import '../../widgets/title.dart';
+
 
 class FirstrunWelcomePage extends StatelessWidget {
   final String title = "Hey there!";
   final String description = "Let's take a moment to configure some important settings, before we begin using the app.";
   final VoidCallback onNextPressed;
 
+
   const FirstrunWelcomePage({
     Key? key,
-    required this.onNextPressed,
+    required this.onNextPressed
   }) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +31,13 @@ class FirstrunWelcomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            const SizedBox(height: 100),
+            Center(child: illustration),
+            const SizedBox(height: 100),
             Expanded(
-                flex: 4,
-                child: Center(child: illustration)
-            ),
-            Expanded(
-              flex: 2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20), // Apply padding here
-                constraints: const BoxConstraints(maxWidth: 300), // Apply constraints here
+                child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                constraints: const BoxConstraints(maxWidth: 350),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -49,13 +49,6 @@ class FirstrunWelcomePage extends StatelessWidget {
                     )
                   ]
                 )
-              )
-            ),
-            Expanded(
-                flex: 1,
-                child: CustomElevatedButton(
-                    buttonText: 'Start',
-                    onPressed: onNextPressed
                 )
             )
           ]

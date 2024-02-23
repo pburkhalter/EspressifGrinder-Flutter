@@ -22,7 +22,8 @@ class ApiService {
     httpClient = HttpClient(context: context);
   }
 
-  Future<dynamic> _sendRequest(String endpoint, String method, [dynamic body]) async {
+  Future<dynamic> _sendRequest(String endpoint, String method,
+      [dynamic body]) async {
     try {
       Uri uri = Uri.parse(endpoint);
       HttpClientRequest request;
@@ -49,19 +50,22 @@ class ApiService {
       if (body != null) {
         if (body is String) {
           // For plain text content
-          request.headers.set(HttpHeaders.contentTypeHeader, 'text/plain; charset=UTF-8');
+          request.headers
+              .set(HttpHeaders.contentTypeHeader, 'text/plain; charset=UTF-8');
           request.headers.contentLength = body.length;
           request.write(body); // Directly write the string body
         } else if (body is Map || body is List) {
           // For JSON content
           var encodedBody = utf8.encode(json.encode(body));
-          request.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
+          request.headers.set(
+              HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
           request.headers.contentLength = encodedBody.length;
           request.add(encodedBody); // Use add for byte data
         } else {
           // Handle other types if necessary, default to JSON
           var encodedBody = utf8.encode(json.encode(body.toString()));
-          request.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
+          request.headers.set(
+              HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
           request.add(encodedBody);
         }
       }
@@ -73,8 +77,6 @@ class ApiService {
       throw Exception('Failed to execute $method request: $e');
     }
   }
-
-
 
   Future<bool> uploadFile(String endpoint, String filePath) async {
     try {
@@ -99,7 +101,8 @@ class ApiService {
         print('File uploaded successfully');
         return true;
       } else {
-        print('Failed to upload file: Server responded with status code ${response.statusCode}');
+        print(
+            'Failed to upload file: Server responded with status code ${response.statusCode}');
         return false;
       }
     } catch (e) {
@@ -129,7 +132,9 @@ class ApiService {
 
   // Exposed methods
   Future<dynamic> get(String endpoint) => _sendRequest(endpoint, 'GET');
-  Future<dynamic> post(String endpoint, dynamic body) => _sendRequest(endpoint, 'POST', body);
-  Future<dynamic> put(String endpoint, dynamic body) => _sendRequest(endpoint, 'PUT', body);
+  Future<dynamic> post(String endpoint, dynamic body) =>
+      _sendRequest(endpoint, 'POST', body);
+  Future<dynamic> put(String endpoint, dynamic body) =>
+      _sendRequest(endpoint, 'PUT', body);
   Future<dynamic> delete(String endpoint) => _sendRequest(endpoint, 'DELETE');
 }
