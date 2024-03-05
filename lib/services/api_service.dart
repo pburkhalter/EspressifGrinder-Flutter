@@ -1,29 +1,42 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:espressif_grinder_flutter/services/cert_service.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/services.dart' show ByteData, rootBundle;
-import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/logger.dart';
 
 class ApiService {
   HttpClient httpClient = HttpClient();
+  CertificateService certService = CertificateService();
+  bool useTLS = false;
 
-  ApiService({bool useTLS = false});
+  SharedPreferences? _prefs;
+
+  ApiService();
 
   Future<void> init({bool useTLS = false}) async {
-    if (useTLS) {
+    this.useTLS = useTLS;
+    _prefs ??= await SharedPreferences.getInstance();
+
+    if (this.useTLS) {
       await createSelfSignedAPIClient();
     }
   }
 
   Future<void> createSelfSignedAPIClient() async {
-    ByteData certificate = await rootBundle.load("assets/certs/cert.pem");
-    SecurityContext context = SecurityContext.defaultContext;
-    context.setTrustedCertificatesBytes(certificate.buffer.asUint8List());
-    httpClient = HttpClient(context: context);
+    Uint8List? cert = await certService.loadCertPem();
+
+    if(cert != null){
+      SecurityContext securityContext = SecurityContext(withTrustedRoots: true);
+      securityContext.setTrustedCertificatesBytes(cert.buffer.asUint8List());
+      httpClient = HttpClient(context: securityContext);
+    }
   }
 
-  Future<dynamic> _sendRequest(String endpoint, String method,
-      [dynamic body]) async {
+  Future<dynamic> _sendRequest(String endpoint, String method, [dynamic body]) async {
     try {
       Uri uri = Uri.parse(endpoint);
       HttpClientRequest request;
@@ -46,69 +59,45 @@ class ApiService {
           throw Exception('Unsupported HTTP method: $method');
       }
 
-      // Set Content-Type and prepare the body
+      // Retrieve the token from SharedPreferences and add it to the request headers
+      String? token = await _getToken();
+      if (token != null) {
+        request.headers.set(HttpHeaders.authorizationHeader, "Bearer $token");
+      }
+
       if (body != null) {
         if (body is String) {
           // For plain text content
           request.headers
               .set(HttpHeaders.contentTypeHeader, 'text/plain; charset=UTF-8');
           request.headers.contentLength = body.length;
-          request.write(body); // Directly write the string body
+          request.write(body);
         } else if (body is Map || body is List) {
           // For JSON content
           var encodedBody = utf8.encode(json.encode(body));
-          request.headers.set(
-              HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
+          request.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
           request.headers.contentLength = encodedBody.length;
           request.add(encodedBody); // Use add for byte data
         } else {
           // Handle other types if necessary, default to JSON
           var encodedBody = utf8.encode(json.encode(body.toString()));
-          request.headers.set(
-              HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
+          request.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=UTF-8');
           request.add(encodedBody);
         }
       }
 
       HttpClientResponse response = await request.close();
+
       // Process the response
       return _processResponse(response);
     } catch (e) {
+      print(e);
       throw Exception('Failed to execute $method request: $e');
     }
   }
 
-  Future<bool> uploadFile(String endpoint, String filePath) async {
-    try {
-      final uri = Uri.parse(endpoint);
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/$filePath');
-
-      // Read the file as bytes
-      final fileBytes = await file.readAsBytes();
-
-      // Base64 encode the bytes
-      final String base64Encoded = base64Encode(fileBytes);
-
-      // Send the Base64-encoded string as the request body
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'text/plain'},
-        body: base64Encoded,
-      );
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        print('File uploaded successfully');
-        return true;
-      } else {
-        print(
-            'Failed to upload file: Server responded with status code ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      print('Failed to upload file: $e');
-      return false;
-    }
+  Future<String?> _getToken() async {
+    return _prefs?.getString('token');
   }
 
   Future<dynamic> _processResponse(HttpClientResponse response) async {
@@ -130,11 +119,39 @@ class ApiService {
     }
   }
 
-  // Exposed methods
+  Future<bool> uploadCert(String endpoint, String certName) async {
+    try {
+      final uri = Uri.parse(endpoint);
+      final fileBytes = await certService.loadCert(certName);
+
+      // Base64 encode the bytes
+      if(fileBytes != null){
+        final String base64Encoded = base64Encode(fileBytes);
+
+        // Send the Base64-encoded string as the request body
+        final response = await http.post(
+          uri,
+          headers: {'Content-Type': 'text/plain'},
+          body: base64Encoded,
+        );
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          logger.i('File uploaded successfully');
+          return true;
+        } else {
+          logger.e('Failed to upload file: Server responded with status code ${response.statusCode}');
+        }
+      } else {
+        logger.e('Could not load certificate: $certName');
+      }
+    } catch (e) {
+      logger.e('Failed to upload file: $e');
+    }
+    return false;
+  }
+
   Future<dynamic> get(String endpoint) => _sendRequest(endpoint, 'GET');
-  Future<dynamic> post(String endpoint, dynamic body) =>
-      _sendRequest(endpoint, 'POST', body);
-  Future<dynamic> put(String endpoint, dynamic body) =>
-      _sendRequest(endpoint, 'PUT', body);
+  Future<dynamic> post(String endpoint, dynamic body) => _sendRequest(endpoint, 'POST', body);
+  Future<dynamic> put(String endpoint, dynamic body) => _sendRequest(endpoint, 'PUT', body);
   Future<dynamic> delete(String endpoint) => _sendRequest(endpoint, 'DELETE');
 }

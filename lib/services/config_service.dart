@@ -20,7 +20,7 @@ class ConfigService {
           buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
       print('Config file copied to ${file.path}');
     } else {
-      print('Config file already exists at ${file.path}');
+      print('Config file already exists at ${file.path}, skipping...');
     }
   }
 

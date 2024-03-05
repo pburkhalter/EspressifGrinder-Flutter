@@ -1,55 +1,48 @@
 import 'dart:async';
 import 'package:flutter_nsd/flutter_nsd.dart';
+
 import '../models/device.dart';
+import '../utils/logger.dart';
 
-String extractDeviceName(String input) {
-  if (input.isEmpty) return input;
-  final String name = input.split('.')[0];
-  return name[0].toUpperCase() + name.substring(1);
-}
+class MdnsService {
+  final FlutterNsd _flutterNsd = FlutterNsd();
+  final List<Device> _devices = [];
+  late StreamSubscription<NsdServiceInfo> _nsdSubscription;
 
-class MdnsDiscoveryService {
-  final flutterNsd = FlutterNsd();
+  Future<List<Device>> discoverDevices(String serviceType) async {
+    _devices.clear(); // Clear any previously discovered devices
 
-  Future<List<Device>> startDiscovery(String serviceType) async {
-    List<Device> devices = [];
-    var completer = Completer<List<Device>>();
+    _nsdSubscription = _flutterNsd.stream.listen(
+          (nsdServiceInfo) {
+        print('Discovered service name: ${nsdServiceInfo.name}');
+        print('Discovered service hostname/IP: ${nsdServiceInfo.hostname}');
+        print('Discovered service port: ${nsdServiceInfo.port}');
 
-    final subscription = flutterNsd.stream.listen((nsdServiceInfo) {
-      print('Discovered service name: ${nsdServiceInfo.name}');
-      print('Discovered service hostname/IP: ${nsdServiceInfo.hostname}');
-      print('Discovered service port: ${nsdServiceInfo.port}');
-
-      final String deviceName = nsdServiceInfo.name ?? 'Unknown';
-      final String deviceAddress =
-          nsdServiceInfo.hostAddresses?.first ?? 'Unknown';
-      final int devicePort = nsdServiceInfo.port ?? 0;
-
-      final device = Device(
-        deviceName: deviceName,
-        deviceAddress: deviceAddress,
-        devicePort: devicePort,
-      );
-      devices.add(device);
-    }, onError: (e) {
-      if (e is NsdError) {
-        print("Error discovering services: ${e.errorCode}");
-        if (!completer.isCompleted) {
-          completer.completeError(e);
+        // Add discovered service to devices list
+        _devices.add(Device(
+          deviceName: nsdServiceInfo.name ?? 'Unknown',
+          deviceAddress: nsdServiceInfo.hostname ?? 'Unknown',
+          devicePort: nsdServiceInfo.port ?? 80,
+        ));
+      },
+      onError: (e) {
+        if (e is NsdError) {
+          logger.e('NSD Error: ${e.errorCode}');
         }
-      }
-    });
+      },
+    );
 
-    await flutterNsd.discoverServices(serviceType);
+    await _flutterNsd.discoverServices(serviceType);
 
-    Future.delayed(Duration(seconds: 10), () {
-      flutterNsd.stopDiscovery();
-      subscription.cancel();
-      if (!completer.isCompleted) {
-        completer.complete(devices);
-      }
-    });
+    // Wait for a specified duration for devices to be discovered
+    await Future.delayed(const Duration(seconds: 120));
+    await stopDiscovery();
 
-    return completer.future;
+    return _devices;
+  }
+
+  Future<void> stopDiscovery() async {
+    await _nsdSubscription.cancel();
+    await _flutterNsd.stopDiscovery();
   }
 }

@@ -27,13 +27,10 @@ class DeviceNotifier extends StateNotifier<Device> {
       devicePort: devicePort ?? state.devicePort,
     )
       ..deviceAuthKey = deviceAuthKey ?? state.deviceAuthKey
-      ..deviceInitializedState =
-          deviceInitializedState ?? state.deviceInitializedState
-      ..deviceInitializedDate =
-          deviceInitializedDate ?? state.deviceInitializedDate
+      ..deviceInitializedState = deviceInitializedState ?? state.deviceInitializedState
+      ..deviceInitializedDate = deviceInitializedDate ?? state.deviceInitializedDate
       ..deviceProductName = deviceProductName ?? state.deviceProductName
-      ..deviceProductManufacturer =
-          deviceProductManufacturer ?? state.deviceProductManufacturer
+      ..deviceProductManufacturer = deviceProductManufacturer ?? state.deviceProductManufacturer
       ..deviceProductSerial = deviceProductSerial ?? state.deviceProductSerial
       ..grindMode = grindMode ?? state.grindMode
       ..singleGrindsDone = singleGrindsDone ?? state.singleGrindsDone
@@ -43,7 +40,10 @@ class DeviceNotifier extends StateNotifier<Device> {
   }
 }
 
-final deviceStateProvider =
-    StateNotifierProvider<DeviceNotifier, Device>((ref) {
+final deviceStateProvider = StateNotifierProvider<DeviceNotifier, Device>((ref) {
+
   return DeviceNotifier();
 });
+
+
+

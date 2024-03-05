@@ -1,114 +1,154 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:basic_utils/basic_utils.dart';
 import 'package:path_provider/path_provider.dart';
+
+import '../utils/logger.dart';
 
 class CertificateService {
   CertificateService();
 
   Future<bool> generateAndSaveCertificates() async {
-    var pair = CryptoUtils.generateEcKeyPair();
-    var privateKey = pair.privateKey as ECPrivateKey;
-    var publicKey = pair.publicKey as ECPublicKey;
+    try{
+      // iOS & macOS prohibit TLS connections if validity period exceeds 825 days
+      // we must also provide the SANs and EKUs in addition to the CN or the
+      // handshake will fail
 
-    var dn = {
-      'CN': 'Self-Signed CoffeeGrinder',
-    };
+      var pair = CryptoUtils.generateEcKeyPair();
+      var privateKey = pair.privateKey as ECPrivateKey;
+      var publicKey = pair.publicKey as ECPublicKey;
 
-    var csr = X509Utils.generateEccCsrPem(dn, privateKey, publicKey);
-    var x509PEM = X509Utils.generateSelfSignedCertificate(privateKey, csr, 365);
-    var privateKeyPem = CryptoUtils.encodeEcPrivateKeyToPem(privateKey);
+      var dn = {
+        'C': 'CH',
+        'ST': 'LU',
+        'L': 'LU',
+        'O': 'CoffeeGrinder',
+        'OU': 'CoffeeGrinder',
+        'CN': 'coffeegrinder',
+      };
 
-    // Save the certificate
-    await saveFile('cert.pem', x509PEM);
-    await saveDerToFile('cert.der', await convertPemToDer(x509PEM));
+      List<String> sans = ['coffeegrinder.local', 'coffeegrinder'];
+      List<ExtendedKeyUsage> eku = [
+        ExtendedKeyUsage.CLIENT_AUTH,
+        ExtendedKeyUsage.SERVER_AUTH
+      ];
 
-    // Save the private key
-    await saveFile('key.pem', privateKeyPem);
-    await saveDerToFile('key.der', await convertPemToDer(privateKeyPem));
+      var csr = X509Utils.generateEccCsrPem(dn, privateKey, publicKey, san: sans);
+      var x509PEM = X509Utils.generateSelfSignedCertificate(privateKey, csr, 365, sans: sans, extKeyUsage: eku);
+      var privateKeyPem = CryptoUtils.encodeEcPrivateKeyToPem(privateKey);
 
-    return true;
+      print(x509PEM);
+
+      // Save the csr
+      await saveCert('csr.pem', csr);
+      await saveCert('csr.der', await convertPemToDer(csr));
+
+      // Save the certificate
+      await saveCert('cert.pem', x509PEM);
+      await saveCert('cert.der', await convertPemToDer(x509PEM));
+
+      // Save the private key
+      await saveCert('key.pem', privateKeyPem);
+      await saveCert('key.der', await convertPemToDer(privateKeyPem));
+
+      return true;
+    }
+    catch(e){
+      logger.e('Error generating certificate: $e');
+      return false;
+    }
   }
 
-  Future<void> saveFile(String filename, String content) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = '${directory.path}/$filename';
-    await File(filePath).writeAsString(content);
-    print('File saved to $filePath');
-  }
-
-  Future<void> saveDerToFile(String filename, List<int> derBytes) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = '${directory.path}/$filename';
-    final file = File(filePath);
-    await file.writeAsBytes(derBytes);
-    print('DER file saved to $filePath');
-  }
-
-  Future<String> loadFile(String filename) async {
+  Future<Uint8List?> convertPemToDer(String pemContent) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final filePath = '${directory.path}/$filename';
-      final file = File(filePath);
+      // Identify and remove the appropriate PEM header and footer for certificates and keys
+      pemContent = pemContent
+          .replaceAll('-----BEGIN CERTIFICATE-----', '')
+          .replaceAll('-----END CERTIFICATE-----', '')
+          .replaceAll('-----BEGIN EC PRIVATE KEY-----', '')
+          .replaceAll('-----END EC PRIVATE KEY-----', '')
+          .replaceAll('-----BEGIN PUBLIC KEY-----', '')
+          .replaceAll('-----END PUBLIC KEY-----', '')
+          .replaceAll('\r\n', '')
+          .replaceAll('\n', '');
 
-      // Check if the file exists before attempting to read it
-      if (await file.exists()) {
-        final content = await file.readAsString();
-        print('File loaded from $filePath');
-        return content;
+      // Base64 decode to get DER bytes
+      return base64.decode(pemContent);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> saveCert(String filename, dynamic content) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final certsDirectory = Directory('${directory.path}/certs');
+    final filePath = '${certsDirectory.path}/$filename';
+
+    try{
+      // Check if the certs directory exists, and if not, create it
+      if (!await certsDirectory.exists()) {
+        await certsDirectory.create(recursive: true);
+      }
+
+      // Check format of the certificate and save according to its type
+      if(content is String){
+        await File(filePath).writeAsString(content);
+      } else if (content is Uint8List){
+        await File(filePath).writeAsBytes(content);
       } else {
-        print('File not found: $filePath');
-        return 'File not found';
+        Type type = content.runtimeType;
+        logger.e('Certificate seems to have wrong type: $type');
+      }
+      logger.i('Certificate saved to $filePath');
+      return true;
+    } catch (e){
+      logger.e('Error saving certificate $filePath: $e');
+      return false;
+    }
+  }
+
+  Future<Uint8List?> loadCert(String filename) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final filePath = '${directory.path}/certs/$filename';
+    final file = File(filePath);
+
+    try {
+      if (await file.exists()) {
+        final contentBytes = await file.readAsBytes();
+        logger.i('Certificate loaded from $filePath');
+        return contentBytes;
+      } else {
+        logger.e('Certificate not found: $filePath');
       }
     } catch (e) {
-      // If an error occurs, print it and return an error message
-      print('Error loading file: $e');
-      return 'Error loading file';
+      logger.e('Error loading certificate: $e');
     }
+    return null;
   }
 
-  Future<List<int>> loadDerFromFile(String filename) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = '${directory.path}/$filename';
-    final file = File(filePath);
-
-    if (await file.exists()) {
-      final derBytes = await file.readAsBytes();
-      return derBytes;
-    } else {
-      throw Exception('File not found: $filePath');
-    }
+  Future<Uint8List?> loadCSRPem() async {
+    return loadCert('csr.pem');
   }
 
-  Future<List<int>> convertPemToDer(String pemContent) async {
-    // Identify and remove the appropriate PEM header and footer for certificates and keys
-    pemContent = pemContent
-        .replaceAll('-----BEGIN CERTIFICATE-----', '')
-        .replaceAll('-----END CERTIFICATE-----', '')
-        .replaceAll('-----BEGIN EC PRIVATE KEY-----', '')
-        .replaceAll('-----END EC PRIVATE KEY-----', '')
-        .replaceAll('-----BEGIN PUBLIC KEY-----', '')
-        .replaceAll('-----END PUBLIC KEY-----', '')
-        .replaceAll('\r\n', '')
-        .replaceAll('\n', '');
-
-    // Base64 decode to get DER bytes
-    return base64.decode(pemContent);
+  Future<Uint8List?> loadCSRDer() async {
+    return loadCert('csr.der');
   }
 
-  Future<String> loadCertPem() async {
-    return loadFile('cert.pem');
+  Future<Uint8List?> loadCertPem() async {
+    return loadCert('cert.pem');
   }
 
-  Future<String> loadKeyPem() async {
-    return loadFile('key.pem');
+  Future<Uint8List?> loadKeyPem() async {
+    return loadCert('key.pem');
   }
 
-  Future<List<int>> loadCertDer() async {
-    return loadDerFromFile('cert.der');
+  Future<Uint8List?> loadCertDer() async {
+    return loadCert('cert.der');
   }
 
-  Future<List<int>> loadKeyDer() async {
-    return loadDerFromFile('key.der');
+  Future<Uint8List?> loadKeyDer() async {
+    return loadCert('key.der');
   }
 }

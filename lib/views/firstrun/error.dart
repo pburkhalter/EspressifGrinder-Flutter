@@ -1,23 +1,20 @@
-import 'package:espressif_grinder_flutter/views/firstrun/firstrun.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../providers/setup_provider.dart';
-import '../../widgets/description.dart';
-import '../../widgets/title.dart';
+import 'firstrun.dart';
 
-class FirstrunWelcomePage extends ConsumerStatefulWidget {
-  const FirstrunWelcomePage({
-    Key? key,
-  }) : super(key: key);
+class FirstrunErrorPage extends ConsumerStatefulWidget {
+  const FirstrunErrorPage({Key? key}) : super(key: key);
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
-      _FirstrunWelcomePageState();
+      _FirstrunSuccessPageState();
 }
 
-class _FirstrunWelcomePageState extends ConsumerState<FirstrunWelcomePage> {
+class _FirstrunSuccessPageState extends ConsumerState<FirstrunErrorPage> {
   @override
   void initState() {
     super.initState();
@@ -28,12 +25,13 @@ class _FirstrunWelcomePageState extends ConsumerState<FirstrunWelcomePage> {
 
   void configureSetupPageState() {
     final setupNotifier = ref.read(deviceSetupProvider.notifier);
+
     setupNotifier.setNextPageArrowVisibility(false);
     setupNotifier.setPrevPageArrowVisibility(false);
     setupNotifier.setNavButtonVisibility(true);
 
-    setupNotifier.setNavButtonText("Start");
-    setupNotifier.setNavRoute("/firstrun/instructions?page=1");
+    setupNotifier.setNavButtonText("Reset device");
+    setupNotifier.setNavRoute("/firstrun/welcome?page=6");
   }
 
   @override
@@ -41,14 +39,14 @@ class _FirstrunWelcomePageState extends ConsumerState<FirstrunWelcomePage> {
     final deviceSetupState = ref.watch(deviceSetupProvider);
 
     final Widget illustration = SvgPicture.asset(
-      'assets/images/coffee_beans.svg',
+      'assets/images/error.svg',
       width: 150,
       height: 150,
     );
 
-    const String title = "Hey there!";
+    const String title = "Oops!";
     const String description =
-        "Let's take a moment to configure some important settings, before we begin using the app.";
+        "Something went wrong while setting up the device. Try again?";
 
     return FirstrunPage(
         child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -59,11 +57,25 @@ class _FirstrunWelcomePageState extends ConsumerState<FirstrunWelcomePage> {
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               constraints: const BoxConstraints(maxWidth: 350),
-              child: const Column(
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    TitleText(text: title, padding: 16),
-                    DescriptionText(text: description)
+                    const Text(
+                      title,
+                      style: TextStyle(
+                          fontSize: 48, height: 1.1, letterSpacing: -2),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      description,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                        'Reason: ${deviceSetupState.errorMessage!}',
+                        textAlign: TextAlign.center,)
                   ])))
     ]));
   }

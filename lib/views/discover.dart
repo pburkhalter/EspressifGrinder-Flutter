@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 
-import '../../models/device.dart';
-import '../../state/discover_state.dart';
-import '../../widgets/button.dart';
-import '../../widgets/description.dart';
-import '../../widgets/device_list_view.dart';
-import '../../widgets/title.dart';
+import '../models/device.dart';
+import '../providers/discover_provider.dart';
+import '../widgets/button.dart';
+import '../widgets/description.dart';
+import '../widgets/device_list_view.dart';
+import '../widgets/title.dart';
 
 
 class DiscoveryMessageWidget extends StatelessWidget {

@@ -1,79 +1,95 @@
 import 'package:espressif_grinder_flutter/services/config_service.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '/views/firstrun/firstrun.dart';
+import 'views/firstrun/welcome.dart';
+import 'views/firstrun/instructions.dart';
+import 'views/firstrun/connect.dart';
+import 'views/firstrun/wifi.dart';
+import 'views/firstrun/setup.dart';
+import 'views/firstrun/success.dart';
+import 'views/firstrun/error.dart';
+
+import 'views/device.dart';
+import 'views/settings.dart';
 
 
 Future<bool> isFirstRun() async {
   var configService = ConfigService();
   await configService.copyConfigFile();
-
   return !(await configService.get('firstrun_done'));
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  var configService = ConfigService();
+  bool firstRun = await isFirstRun();
 
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]).then((value) => runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  ));
+  runApp(ProviderScope(child: MyApp(firstRun: firstRun)));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool firstRun;
+  const MyApp({super.key, required this.firstRun});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Navigation Example',
-      home: FutureBuilder<bool>(
-        future: isFirstRun(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            if (snapshot.hasError) {
-              return const Center(child: Text('Error loading configuration'));
-            }
-            // Navigate to FirstrunProcess if firstrun_done is false or not set
-            if (snapshot.data == true) {
-              return const FirstrunProcess();
-            } else {
-              return const MainScreen();
-            }
-          } else {
-            // Show loading spinner while checking configuration
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          }
-        },
-      ),
-    );
-  }
-}
-
-class MainScreen extends StatelessWidget {
-  const MainScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: ElevatedButton(
-          child: const Text('Go to Setup'),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const FirstrunProcess()),
-            );
-          },
+    final GoRouter router = GoRouter(
+      initialLocation: firstRun ? '/firstrun/welcome?page=0' : '/device',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/firstrun/welcome',
+          name: 'firstrunWelcome',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunWelcomePage(),
         ),
-      ),
+        GoRoute(
+          path: '/firstrun/instructions',
+          name: 'firstrunInstructions',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunInstructionsPage(),
+        ),
+        GoRoute(
+          path: '/firstrun/connect',
+          name: 'firstrunConnect',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunConnectPage(),
+        ),
+        GoRoute(
+          path: '/firstrun/wifi',
+          name: 'firstrunWifi',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunWifiPage(),
+        ),
+        GoRoute(
+          path: '/firstrun/setup',
+          name: 'firstrunSetup',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunSetupPage(),
+        ),
+        GoRoute(
+          path: '/firstrun/success',
+          name: 'firstrunSuccess',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunSuccessPage(),
+        ),
+        GoRoute(
+          path: '/firstrun/error',
+          name: 'firstrunError',
+          builder: (BuildContext context, GoRouterState state) => const FirstrunErrorPage(),
+        ),
+        GoRoute(
+          path: '/device',
+          builder: (BuildContext context, GoRouterState state) => const DevicePage(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (BuildContext context, GoRouterState state) => const SettingsPage(),
+        ),
+      ],
+    );
+
+    return MaterialApp.router(
+      routerDelegate: router.routerDelegate,
+      routeInformationParser: router.routeInformationParser,
+      routeInformationProvider: router.routeInformationProvider,
     );
   }
 }
