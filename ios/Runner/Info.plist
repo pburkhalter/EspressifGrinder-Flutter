@@ -45,11 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>Discover local Network Devices (Grinder)</string>
-    <key>NSBonjourServices</key>
-    <array>
-       <string>_http._tcp.</string>
-    </array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Discover local Network Devices (Grinder)</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp.</string>
+	</array>
 </dict>
 </plist>
