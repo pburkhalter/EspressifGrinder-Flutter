@@ -1,16 +1,17 @@
 import 'package:espressif_grinder_flutter/views/firstrun/firstrun.dart';
+import 'package:espressif_grinder_flutter/widgets/title.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../providers/setup_provider.dart';
 import '../../widgets/description.dart';
-import '../../widgets/title.dart';
+
 
 class FirstrunWelcomePage extends ConsumerStatefulWidget {
   const FirstrunWelcomePage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>

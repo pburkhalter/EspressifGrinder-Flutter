@@ -1,4 +1,5 @@
 import 'package:espressif_grinder_flutter/services/config_service.dart';
+import 'package:espressif_grinder_flutter/views/welcome_flow_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,8 +39,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final GoRouter router = GoRouter(
-      initialLocation: firstRun ? '/firstrun/welcome?page=0' : '/device',
-      routes: <RouteBase>[
+      initialLocation: firstRun ?  '/welcomePage' : '/device', //'/firstrun/welcome?page=0' : '/device',
+      routes: [
+        GoRoute(
+          path: '/welcomePage',
+          name: 'welcomePage',
+          builder: (BuildContext context, GoRouterState state) => const WelcomePage(),
+        ),
         GoRoute(
           path: '/firstrun/welcome',
           name: 'firstrunWelcome',
