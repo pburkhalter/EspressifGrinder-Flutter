@@ -55,7 +55,7 @@ class _FirstrunConnectPageState extends ConsumerState<FirstrunConnectPage> {
 
 
     final Widget illustration = SvgPicture.asset(
-      'assets/images/wifi.svg', width: 120, height: 120,);
+      'assets/images/connect.svg', width: 120, height: 120,);
 
     return FirstrunPage(child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
