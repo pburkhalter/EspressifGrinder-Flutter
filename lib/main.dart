@@ -5,17 +5,15 @@ import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'views/firstrun/welcome.dart';
-import 'views/firstrun/instructions.dart';
+import 'views/device.dart';
 import 'views/firstrun/connect.dart';
-import 'views/firstrun/wifi.dart';
+import 'views/firstrun/error.dart';
+import 'views/firstrun/instructions.dart';
 import 'views/firstrun/setup.dart';
 import 'views/firstrun/success.dart';
-import 'views/firstrun/error.dart';
-
-import 'views/device.dart';
+import 'views/firstrun/welcome.dart';
+import 'views/firstrun/wifi.dart';
 import 'views/settings.dart';
-
 
 Future<bool> isFirstRun() async {
   var configService = ConfigService();
@@ -39,32 +37,32 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final GoRouter router = GoRouter(
-      initialLocation: firstRun ?  '/welcomePage' : '/device', //'/firstrun/welcome?page=0' : '/device',
+      initialLocation: firstRun ? '/welcomePage' : '/device', //'/firstrun/welcome?page=0' : '/device',
       routes: [
         GoRoute(
           path: '/welcomePage',
           name: 'welcomePage',
-          builder: (BuildContext context, GoRouterState state) => const WelcomePage(),
+          builder: (BuildContext context, GoRouterState state) => const WelcomeFlowPage(),
         ),
         GoRoute(
           path: '/firstrun/welcome',
           name: 'firstrunWelcome',
-          builder: (BuildContext context, GoRouterState state) => const FirstrunWelcomePage(),
+          builder: (BuildContext context, GoRouterState state) => const Welcome(),
         ),
         GoRoute(
           path: '/firstrun/instructions',
           name: 'firstrunInstructions',
-          builder: (BuildContext context, GoRouterState state) => const FirstrunInstructionsPage(),
+          builder: (BuildContext context, GoRouterState state) => const Instructions(),
         ),
         GoRoute(
           path: '/firstrun/connect',
           name: 'firstrunConnect',
-          builder: (BuildContext context, GoRouterState state) => const FirstrunConnectPage(),
+          builder: (BuildContext context, GoRouterState state) => const Connect(),
         ),
         GoRoute(
           path: '/firstrun/wifi',
           name: 'firstrunWifi',
-          builder: (BuildContext context, GoRouterState state) => const FirstrunWifiPage(),
+          builder: (BuildContext context, GoRouterState state) => const Wifi(),
         ),
         GoRoute(
           path: '/firstrun/setup',

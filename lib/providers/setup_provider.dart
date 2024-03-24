@@ -1,11 +1,10 @@
+import 'package:espressif_grinder_flutter/models/device.dart';
 import 'package:espressif_grinder_flutter/providers/device_provider.dart';
 import 'package:espressif_grinder_flutter/services/cert_service.dart';
 import 'package:espressif_grinder_flutter/services/setup_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
-import '../models/device.dart';
 
 class DeviceSetupState {
   final Device? selectedDevice;
@@ -26,41 +25,43 @@ class DeviceSetupState {
   bool navButtonEnabled;
   String navRoute;
 
-  DeviceSetupState(
-      {this.selectedDevice,
-      this.errorMessage = '',
-      this.isLoading = false,
-      this.setupIsRunning = false,
-      this.setupFinished = false,
-      this.currentSetupStep = 0,
-      this.statusMessage = 'Initializing...',
-      this.wifiAccessPoint = '',
-      this.wifiPassword = '',
-      this.authToken = '',
-      this.showNextPageArrow = false,
-      this.showPrevPageArrow = false,
-      this.showNavButton = false,
-      this.navButtonText = 'Start',
-      this.navButtonEnabled = true,
-      this.navRoute = '/welcome'});
+  DeviceSetupState({
+    this.selectedDevice,
+    this.errorMessage = '',
+    this.isLoading = false,
+    this.setupIsRunning = false,
+    this.setupFinished = false,
+    this.currentSetupStep = 0,
+    this.statusMessage = 'Initializing...',
+    this.wifiAccessPoint = '',
+    this.wifiPassword = '',
+    this.authToken = '',
+    this.showNextPageArrow = false,
+    this.showPrevPageArrow = false,
+    this.showNavButton = false,
+    this.navButtonText = 'Start',
+    this.navButtonEnabled = true,
+    this.navRoute = '/welcome',
+  });
 
-  DeviceSetupState copyWith(
-      {Device? selectedDevice,
-      String? errorMessage,
-      bool? isLoading,
-      int? currentSetupStep,
-      String? statusMessage,
-      bool? setupFinished,
-      bool? setupIsRunning,
-      String? wifiAccessPoint,
-      String? wifiPassword,
-      String? authToken,
-      bool? showNextPageArrow,
-      bool? showPrevPageArrow,
-      bool? showNavButton,
-      String? navButtonText,
-      bool? navButtonEnabled,
-      String? navRoute}) {
+  DeviceSetupState copyWith({
+    Device? selectedDevice,
+    String? errorMessage,
+    bool? isLoading,
+    int? currentSetupStep,
+    String? statusMessage,
+    bool? setupFinished,
+    bool? setupIsRunning,
+    String? wifiAccessPoint,
+    String? wifiPassword,
+    String? authToken,
+    bool? showNextPageArrow,
+    bool? showPrevPageArrow,
+    bool? showNavButton,
+    String? navButtonText,
+    bool? navButtonEnabled,
+    String? navRoute,
+  }) {
     return DeviceSetupState(
         selectedDevice: selectedDevice ?? this.selectedDevice,
         errorMessage: errorMessage ?? this.errorMessage,
@@ -111,8 +112,7 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
     ];
 
     for (var i = 0; i < setupSteps.length; i++) {
-      if (!state.setupIsRunning)
-        break; // Check if the setup process was stopped
+      if (!state.setupIsRunning) break; // Check if the setup process was stopped
       var success = await setupSteps[i]();
       if (!success) {
         state = state.copyWith(
@@ -135,8 +135,7 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
   }
 
   Future<void> stopDeviceSetup(String message) async {
-    state = state.copyWith(
-        errorMessage: message, isLoading: false, setupIsRunning: false);
+    state = state.copyWith(errorMessage: message, isLoading: false, setupIsRunning: false);
     showToast(message);
   }
 
@@ -218,10 +217,8 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
   Future<bool> pushCertificatesToDevice() async {
     updateStep("Pushing certificates to device...");
 
-    final isCertPushed =
-        await setupService.pushCertificateToDevice('cert.der', 'cert');
-    final isKeyPushed =
-        await setupService.pushCertificateToDevice('key.der', 'key');
+    final isCertPushed = await setupService.pushCertificateToDevice('cert.der', 'cert');
+    final isKeyPushed = await setupService.pushCertificateToDevice('key.der', 'key');
 
     if (!isCertPushed || !isKeyPushed) {
       stopDeviceSetup("Could not push certificates to device");
@@ -230,12 +227,10 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
     return true;
   }
 
-  Future<bool> pushWifiConfigToDevice(
-      String accessPoint, String password) async {
+  Future<bool> pushWifiConfigToDevice(String accessPoint, String password) async {
     updateStep("Pushing WiFi credentials to device...");
 
-    final isPushed =
-        await setupService.pushWifiConfigToDevice(accessPoint, password);
+    final isPushed = await setupService.pushWifiConfigToDevice(accessPoint, password);
     if (!isPushed) {
       stopDeviceSetup("Could not push Wifi credentials to device");
     }
@@ -300,8 +295,7 @@ class DeviceSetupNotifier extends StateNotifier<DeviceSetupState> {
   }
 }
 
-final deviceSetupProvider =
-    StateNotifierProvider<DeviceSetupNotifier, DeviceSetupState>((ref) {
+final deviceSetupProvider = StateNotifierProvider<DeviceSetupNotifier, DeviceSetupState>((ref) {
   final device = ref.watch(deviceStateProvider);
 
   return DeviceSetupNotifier(device);

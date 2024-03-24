@@ -5,24 +5,13 @@ class TitleText extends StatelessWidget {
   final double padding;
 
   const TitleText({
-    Key? key,
     required this.text,
     this.padding = 0,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(padding),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 40,
-          height: 1.1,
-          letterSpacing: -2,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
+    return Placeholder();
   }
 }

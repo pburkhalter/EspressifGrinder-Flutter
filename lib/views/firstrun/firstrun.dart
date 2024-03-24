@@ -1,4 +1,3 @@
-import 'package:espressif_grinder_flutter/views/firstrun/wifi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +16,6 @@ class FirstrunPage extends ConsumerStatefulWidget {
 }
 
 class FirstrunPageState extends ConsumerState<FirstrunPage> {
-
   final int _numPages = 6;
 
   void goToPage() {
@@ -95,8 +93,7 @@ class FirstrunPageState extends ConsumerState<FirstrunPage> {
               child: CustomElevatedButton(
                 buttonText: deviceSetupState.navButtonText,
                 onPressed: deviceSetupState.navButtonEnabled ? goToPage : null,
-              )
-          ),
+              )),
           PageIndicator(
             totalPages: _numPages,
             currentPage: int.parse(currentPage ?? '0'),
@@ -105,10 +102,4 @@ class FirstrunPageState extends ConsumerState<FirstrunPage> {
       );
     });
   }
-
 }
-
-
-
-
-

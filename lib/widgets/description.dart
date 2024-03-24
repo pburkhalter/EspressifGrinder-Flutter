@@ -12,15 +12,6 @@ class DescriptionText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(padding),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 14,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
+    return Placeholder();
   }
 }
