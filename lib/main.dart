@@ -14,12 +14,14 @@ import 'views/firstrun/error.dart';
 
 import 'views/device.dart';
 import 'views/settings.dart';
+import 'views/main.dart';
 
 
 Future<bool> isFirstRun() async {
   var configService = ConfigService();
   await configService.copyConfigFile();
-  return !(await configService.get('firstrun_done'));
+  bool isDone = await configService.get('firstrun_done');
+  return !isDone;
 }
 
 Future<void> main() async {
@@ -38,7 +40,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final GoRouter router = GoRouter(
-      initialLocation: firstRun ? '/firstrun/welcome?page=0' : '/device',
+      initialLocation: firstRun ? '/firstrun/welcome?page=0' : '/main',
       routes: <RouteBase>[
         GoRoute(
           path: '/firstrun/welcome',
@@ -74,6 +76,10 @@ class MyApp extends StatelessWidget {
           path: '/firstrun/error',
           name: 'firstrunError',
           builder: (BuildContext context, GoRouterState state) => const FirstrunErrorPage(),
+        ),
+        GoRoute(
+          path: '/main',
+          builder: (BuildContext context, GoRouterState state) => const MainPage(),
         ),
         GoRoute(
           path: '/device',

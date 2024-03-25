@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../providers/setup_provider.dart';
+import '../../services/config_service.dart';
 import 'firstrun.dart';
 
 
@@ -23,6 +24,9 @@ class _FirstrunSuccessPageState extends ConsumerState<FirstrunSuccessPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       configureSetupPageState();
+
+      var configService = ConfigService();
+      configService.set('firstrun_done', true);
     });
   }
 
@@ -34,7 +38,7 @@ class _FirstrunSuccessPageState extends ConsumerState<FirstrunSuccessPage> {
     setupNotifier.setNavButtonVisibility(true);
 
     setupNotifier.setNavButtonText("Done");
-    setupNotifier.setNavRoute("/device?page=6");
+    setupNotifier.setNavRoute("/main?page=6");
   }
 
   @override

@@ -131,16 +131,21 @@ class DeviceSetupService {
   }
 
   Future<bool> resetDeviceToFactorySettings() async {
+    await _apiService.init(useTLS: true);
+    _device.deviceName = 'CoffeeGrinder';
+    _device.deviceAddress = 'coffeegrinder.local';
+    _device.devicePort = 443;
+
+    var success = await makeRequest("/api/reset", (endpoint) async {
+      await _apiService.get(endpoint);
+    });
+
     // device will restart without TLS enabled, so we'll switch too...
     await _apiService.init(useTLS: false);
 
     _device.deviceName = 'CoffeeGrinder';
     _device.deviceAddress = '192.168.4.1';
     _device.devicePort = 80;
-
-    var success = await makeRequest("/api/reset", (endpoint) async {
-      await _apiService.get(endpoint);
-    });
 
     return success;
   }
